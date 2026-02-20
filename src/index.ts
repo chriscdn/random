@@ -100,6 +100,7 @@ const randomInteger = (options: NumericRangeOptions) =>
 
 /**
  * Returns a random integer between min (inclusive) and max (inclusive).
+ *
  * @param {Object} options
  * @param {number} options.min - The lower bound (inclusive).
  * @param {number} options.max - The upper bound (inclusive).
@@ -122,7 +123,8 @@ const randomIntegerInclusive = (options: NumericRangeOptions) => {
  * @template T
  * @param {T[]} arr - The array to pick from. Must not be empty.
  * @param {Object} [options] - Optional settings.
- * @param {boolean} [options.highEntropy=false] - Use Web Crypto API for higher-entropy randomness.
+ * @param {boolean} [options.highEntropy=false] - Use Web Crypto API for
+ * higher-entropy randomness.
  *
  * @returns {T} A randomly selected element from the array.
  * @throws {Error} If the array is empty.
@@ -184,8 +186,7 @@ const randomBoolean = (
  *
  * @param {Object} options
  * @param {number} options.maxRatio - Maximum ratio value. Can be less than 1; the function normalizes it to be >= 1.
- * @param {number} [options.landscapeLikelihood=0.5] - Probability that the returned ratio is landscape (greater than 1).
- *   A value of 0.5 gives equal chance for portrait and landscape.
+ * @param {number} [options.landscapeLikelihood=0.5] - Probability that the returned ratio is landscape (greater than 1). A value of 0.5 gives equal chance for portrait and landscape.
  * @param {boolean} [options.highEntropy=false] - Use the Web Crypto API for high-entropy randomness.
  *
  * @returns {number} A ratio between 1/maxRatio and maxRatio, symmetric around 1.
