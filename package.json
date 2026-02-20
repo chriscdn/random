@@ -1,6 +1,6 @@
 {
   "name": "@chriscdn/random",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Simple, type-safe random functions for TypeScript, with optional high-entropy support.",
   "repository": "https://github.com/chriscdn/random",
   "author": "Christopher Meyer <chris@schwiiz.org>",
