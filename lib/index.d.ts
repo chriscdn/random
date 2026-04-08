@@ -13,7 +13,7 @@ type NumericRangeOptions = {
  *
  * @returns {number}
  */
-declare const randomFloat: ({ min, max, highEntropy }: NumericRangeOptions) => number;
+declare const randomFloat: ({ min, max, highEntropy, }: NumericRangeOptions) => number;
 /**
  * Returns a random integer between min (inclusive) and max (exclusive).
  *
@@ -79,7 +79,7 @@ declare const shuffle: <T>(arr: T[], { highEntropy, inPlace }?: {
  *
  * @returns {boolean}
  */
-declare const randomBoolean: ({ likelihood, highEntropy }?: {
+declare const randomBoolean: ({ likelihood, highEntropy, }?: {
     likelihood?: number;
     highEntropy?: boolean;
 }) => boolean;
@@ -142,5 +142,22 @@ declare const randomId: () => string;
  * @throws {Error} If cryptographic randomness is not available.
  */
 declare const randomUUID: () => `${string}-${string}-${string}-${string}-${string}`;
+/**
+ * Generates a list of unique random integers within a given range.
+ *
+ * The range is inclusive of `min` and exclusive of `max`.
+ * The result will contain at most `count` values, or fewer if the range is smaller.
+ *
+ * @param {Object} params
+ * @param {number} params.min - Lower bound (inclusive)
+ * @param {number} params.max - Upper bound (exclusive)
+ * @param {number} params.count - Number of integers to return
+ * @param {boolean} [params.highEntropy=false] - Whether to use a higher quality randomization strategy
+ *
+ * @returns {number[]} An array of unique random integers within [min, max)
+ */
+declare const randomUniqueIntegers: ({ min, max, count, highEntropy, }: NumericRangeOptions & {
+    count?: number;
+}) => number[];
 
-export { pickOne, randomAspectRatio, randomBoolean, randomFloat, randomId, randomInteger, randomIntegerInclusive, randomString, randomUUID, shuffle };
+export { pickOne, randomAspectRatio, randomBoolean, randomFloat, randomId, randomInteger, randomIntegerInclusive, randomString, randomUUID, randomUniqueIntegers, shuffle };

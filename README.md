@@ -52,7 +52,12 @@ const secureValue = randomInteger({ min: 1, max: 100, highEntropy: true });
 ### Arrays & Booleans
 
 ```ts
-import { pickOne, shuffle, randomBoolean } from "@chriscdn/random";
+import {
+  pickOne,
+  shuffle,
+  randomBoolean,
+  randomUniqueIntegers,
+} from "@chriscdn/random";
 
 const colours = ["red", "blue", "green"];
 
@@ -65,6 +70,9 @@ const shuffledColours = shuffle(colours);
 
 // 20% chance to be true
 const isRareEvent = randomBoolean({ likelihood: 0.2 });
+
+// Returns 3 unique integers in the range [4, 20)
+const numbers = randomUniqueIntegers({ min: 4, max: 20, count: 3 });
 ```
 
 ### Random Strings & IDs

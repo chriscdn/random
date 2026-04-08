@@ -43,7 +43,8 @@ const assertCryptoRandomValues = () => {
 
 const assertCryptoUUID = () => {
   if (
-    typeof crypto === "undefined" || typeof crypto.randomUUID !== "function"
+    typeof crypto === "undefined" ||
+    typeof crypto.randomUUID !== "function"
   ) {
     throw new Error("UUID generation requires crypto.randomUUID");
   }
@@ -55,9 +56,7 @@ type NumericRangeOptions = {
   highEntropy?: boolean;
 };
 
-const _random01 = (
-  { highEntropy = false }: { highEntropy?: boolean } = {},
-) => {
+const _random01 = ({ highEntropy = false }: { highEntropy?: boolean } = {}) => {
   if (highEntropy) {
     assertCryptoRandomValues();
     const arr = new Uint32Array(1);
@@ -78,9 +77,11 @@ const _random01 = (
  *
  * @returns {number}
  */
-const randomFloat = (
-  { min, max, highEntropy = false }: NumericRangeOptions,
-) => {
+const randomFloat = ({
+  min,
+  max,
+  highEntropy = false,
+}: NumericRangeOptions) => {
   assert(min <= max, "min must be less than or equal to max");
   return _random01({ highEntropy }) * (max - min) + min;
 };
@@ -154,7 +155,7 @@ const shuffle = <T>(
   arr: T[],
   { highEntropy = false, inPlace = false } = {},
 ): T[] => {
-  const arrCopy = inPlace ? arr : arr.slice(); // create a copy
+  const arrCopy = inPlace ? arr : arr.slice(); // create a shallow copy
   for (let i = arrCopy.length - 1; i > 0; i--) {
     const j = randomIntegerInclusive({ min: 0, max: i, highEntropy });
     [arrCopy[i] as T, arrCopy[j] as T] = [arrCopy[j] as T, arrCopy[i] as T];
@@ -170,12 +171,13 @@ const shuffle = <T>(
  *
  * @returns {boolean}
  */
-const randomBoolean = (
-  { likelihood = 0.5, highEntropy = false }: {
-    likelihood?: number;
-    highEntropy?: boolean;
-  } = {},
-) => {
+const randomBoolean = ({
+  likelihood = 0.5,
+  highEntropy = false,
+}: {
+  likelihood?: number;
+  highEntropy?: boolean;
+} = {}) => {
   assertRange({ value: likelihood, min: 0, max: 1, name: "likelihood" });
   return randomFloat({ min: 0, max: 1, highEntropy }) < likelihood;
 };
@@ -280,6 +282,36 @@ const randomUUID = () => {
   return crypto.randomUUID();
 };
 
+/**
+ * Generates a list of unique random integers within a given range.
+ *
+ * The range is inclusive of `min` and exclusive of `max`.
+ * The result will contain at most `count` values, or fewer if the range is smaller.
+ *
+ * @param {Object} params
+ * @param {number} params.min - Lower bound (inclusive)
+ * @param {number} params.max - Upper bound (exclusive)
+ * @param {number} params.count - Number of integers to return
+ * @param {boolean} [params.highEntropy=false] - Whether to use a higher quality randomization strategy
+ *
+ * @returns {number[]} An array of unique random integers within [min, max)
+ */
+const randomUniqueIntegers = ({
+  min,
+  max,
+  count = Math.max(0, max - min),
+  highEntropy = false,
+}: NumericRangeOptions & {
+  count?: number;
+}) => {
+  assert(min <= max, "min must be less than or equal to max");
+
+  const range = Math.max(0, max - min);
+  const items = Array.from({ length: range }, (_, i) => i + min);
+
+  return shuffle(items, { inPlace: true, highEntropy }).slice(0, count);
+};
+
 export {
   pickOne,
   randomAspectRatio,
@@ -291,4 +323,5 @@ export {
   randomString,
   randomUUID,
   shuffle,
+  randomUniqueIntegers,
 };
