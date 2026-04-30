@@ -38,6 +38,7 @@ describe("RandomArray", () => {
       const randomArray = randomUniqueIntegers({
         min,
         max,
+        // inclusiveMax: true,
       });
 
       const control = Array.from(

@@ -156,8 +156,9 @@ declare const randomUUID: () => `${string}-${string}-${string}-${string}-${strin
  *
  * @returns {number[]} An array of unique random integers within [min, max)
  */
-declare const randomUniqueIntegers: ({ min, max, count, highEntropy, }: NumericRangeOptions & {
+declare const randomUniqueIntegers: ({ min, max, count, highEntropy, inclusiveMax, }: NumericRangeOptions & {
     count?: number;
+    inclusiveMax?: boolean;
 }) => number[];
 
 export { pickOne, randomAspectRatio, randomBoolean, randomFloat, randomId, randomInteger, randomIntegerInclusive, randomString, randomUUID, randomUniqueIntegers, shuffle };

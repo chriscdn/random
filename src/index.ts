@@ -237,9 +237,20 @@ const randomString = ({
   if (highEntropy) {
     assertCryptoRandomValues();
 
-    const bytes = new Uint32Array(length);
+    const bytes = new Uint32Array(2 * length);
+
     crypto.getRandomValues(bytes);
-    return Array.from(bytes, (b) => chars[b % charCount]).join("");
+
+    // remove modulo bias
+    const max = Math.floor(2 ** 32 / charCount) * charCount;
+    const fbytes = bytes.filter((b) => b < max).slice(0, length);
+
+    if (fbytes.length < length) {
+      // try again, which is extremely rare
+      return randomString({ length, chars, highEntropy });
+    } else {
+      return Array.from(fbytes, (b) => chars[b % charCount]).join("");
+    }
   } else {
     return Array.from(
       { length },
@@ -299,17 +310,22 @@ const randomUUID = () => {
 const randomUniqueIntegers = ({
   min,
   max,
-  count = Math.max(0, max - min),
+  count,
   highEntropy = false,
+  inclusiveMax = false,
 }: NumericRangeOptions & {
   count?: number;
+  inclusiveMax?: boolean;
 }) => {
-  assert(min <= max, "min must be less than or equal to max");
+  const theMax = inclusiveMax ? max + 1 : max;
+  const theCount = count ?? Math.max(0, theMax - min);
 
-  const range = Math.max(0, max - min);
+  assert(min <= theMax, "min must be less than or equal to max");
+
+  const range = Math.max(0, theMax - min);
   const items = Array.from({ length: range }, (_, i) => i + min);
 
-  return shuffle(items, { inPlace: true, highEntropy }).slice(0, count);
+  return shuffle(items, { inPlace: true, highEntropy }).slice(0, theCount);
 };
 
 export {
