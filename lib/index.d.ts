@@ -19,12 +19,15 @@ declare const randomFloat: ({ min, max, highEntropy, }: NumericRangeOptions) => 
  *
  * @param {Object} options
  * @param {number} options.min - The lower bound (inclusive).
- * @param {number} options.max - The upper bound (exclusive).
+ * @param {number} options.max - The upper bound (exclusive by default).
  * @param {boolean} [options.highEntropy=false] - Use Web Crypto API.
+ * @param {boolean} [options.inclusiveMax=false] - Toggle inclusive or exclusive max.
  *
  * @returns {number}
  */
-declare const randomInteger: (options: NumericRangeOptions) => number;
+declare const randomInteger: (options: NumericRangeOptions & {
+    inclusiveMax?: boolean;
+}) => number;
 /**
  * Returns a random integer between min (inclusive) and max (inclusive).
  *
@@ -34,6 +37,7 @@ declare const randomInteger: (options: NumericRangeOptions) => number;
  * @param {boolean} [options.highEntropy=false] - Use Web Crypto API.
  *
  * @returns {number}
+ * @deprecated Use randomInteger({inclusiveMax:true}) instead
  */
 declare const randomIntegerInclusive: (options: NumericRangeOptions) => number;
 /**
@@ -76,6 +80,7 @@ declare const shuffle: <T>(arr: T[], { highEntropy, inPlace }?: {
  *
  * @param {Object} [options]
  * @param {number} [options.likelihood=0.5] - Probability between 0 and 1.
+ * @param {boolean} [options.highEntropy=false] - Use Web Crypto API.
  *
  * @returns {boolean}
  */
@@ -132,29 +137,33 @@ declare const randomId: () => string;
 /**
  * Generates a cryptographically secure UUID (version 4).
  *
- * Uses the Web Crypto API `crypto.randomUUID()` implementation,
- * which produces an RFC 4122 compliant v4 UUID.
+ * Uses the Web Crypto API `crypto.randomUUID()` implementation, which produces
+ * an RFC 4122 compliant v4 UUID.
  *
- * Requires a runtime environment that supports the Web Crypto API.
- * Throws an error if `crypto.randomUUID` is unavailable.
+ * Requires a runtime environment that supports the Web Crypto API. Throws an
+ * error if `crypto.randomUUID` is unavailable.
  *
- * @returns {string} A v4 UUID string (e.g. "550e8400-e29b-41d4-a716-446655440000")
+ * @returns {string} A v4 UUID string (e.g.
+ * "550e8400-e29b-41d4-a716-446655440000")
  * @throws {Error} If cryptographic randomness is not available.
  */
 declare const randomUUID: () => `${string}-${string}-${string}-${string}-${string}`;
 /**
  * Generates a list of unique random integers within a given range.
  *
- * The range is inclusive of `min` and exclusive of `max`.
+ * The range is inclusive of `min` and exclusive of `max` by default.
  * The result will contain at most `count` values, or fewer if the range is smaller.
+ * Negative `count` values are treated as 0.
  *
  * @param {Object} params
- * @param {number} params.min - Lower bound (inclusive)
- * @param {number} params.max - Upper bound (exclusive)
- * @param {number} params.count - Number of integers to return
- * @param {boolean} [params.highEntropy=false] - Whether to use a higher quality randomization strategy
+ * @param {number} params.min - Lower bound (inclusive).
+ * @param {number} params.max - Upper bound (exclusive by default).
+ * @param {number} [params.count] - Number of integers to return. Defaults to the full range.
+ * @param {boolean} [params.highEntropy=false] - Use Web Crypto API for higher-entropy randomness.
+ * @param {boolean} [params.inclusiveMax=false] - Toggle inclusive or exclusive max.
  *
- * @returns {number[]} An array of unique random integers within [min, max)
+ * @returns {number[]} An array of unique random integers within [min, max).
+ * @throws {Error} If min or max are not safe integers, or if min > max.
  */
 declare const randomUniqueIntegers: ({ min, max, count, highEntropy, inclusiveMax, }: NumericRangeOptions & {
     count?: number;

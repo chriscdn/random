@@ -1,34 +1,26 @@
+type NumericRangeOptions = {
+  min: number;
+  max: number;
+  highEntropy?: boolean;
+};
+
+const UINT32_MAX_PLUS_ONE = 2 ** 32; // 4294967296
+
 const assert = (condition: boolean, message = "Assertion failed") => {
   if (!condition) {
     throw new Error(message);
   }
 };
 
-const assertRange = ({
-  value,
-  min,
-  max,
-  inclusiveMin = true,
-  inclusiveMax = true,
-  name = "value",
-}: {
-  value: number;
-  min: number;
-  max: number;
-  inclusiveMin?: boolean;
-  inclusiveMax?: boolean;
-  name?: string;
-}) => {
+const assertMinMax = ({ min, max }: { min: number; max: number }) => {
   assert(min <= max, "min must be less than or equal to max");
+};
 
-  const lowerOk = inclusiveMin ? value >= min : value > min;
-  const upperOk = inclusiveMax ? value <= max : value < max;
-
+const assertMinMaxIntegers = ({ min, max }: { min: number; max: number }) => {
+  assertMinMax({ min, max });
   assert(
-    lowerOk && upperOk,
-    `${name} must be between ${inclusiveMin ? "[" : "("}${min}, ${max}${
-      inclusiveMax ? "]" : ")"
-    }`,
+    Number.isSafeInteger(min) && Number.isSafeInteger(max),
+    "min and max must be safe integers",
   );
 };
 
@@ -50,18 +42,12 @@ const assertCryptoUUID = () => {
   }
 };
 
-type NumericRangeOptions = {
-  min: number;
-  max: number;
-  highEntropy?: boolean;
-};
-
 const _random01 = ({ highEntropy = false }: { highEntropy?: boolean } = {}) => {
   if (highEntropy) {
     assertCryptoRandomValues();
     const arr = new Uint32Array(1);
     crypto.getRandomValues(arr);
-    return arr[0]! / 0x100000000; // 2^32
+    return arr[0]! / UINT32_MAX_PLUS_ONE;
   } else {
     return Math.random();
   }
@@ -82,7 +68,7 @@ const randomFloat = ({
   max,
   highEntropy = false,
 }: NumericRangeOptions) => {
-  assert(min <= max, "min must be less than or equal to max");
+  assertMinMax({ min, max });
   return _random01({ highEntropy }) * (max - min) + min;
 };
 
@@ -91,13 +77,30 @@ const randomFloat = ({
  *
  * @param {Object} options
  * @param {number} options.min - The lower bound (inclusive).
- * @param {number} options.max - The upper bound (exclusive).
+ * @param {number} options.max - The upper bound (exclusive by default).
  * @param {boolean} [options.highEntropy=false] - Use Web Crypto API.
+ * @param {boolean} [options.inclusiveMax=false] - Toggle inclusive or exclusive max.
  *
  * @returns {number}
  */
-const randomInteger = (options: NumericRangeOptions) =>
-  Math.floor(randomFloat(options));
+const randomInteger = (
+  options: NumericRangeOptions & {
+    inclusiveMax?: boolean;
+  },
+) => {
+  const { min, max, inclusiveMax } = options;
+
+  const resolvedMax = inclusiveMax ? max + 1 : max;
+
+  assertMinMaxIntegers({ min, max: resolvedMax });
+
+  return Math.floor(
+    randomFloat({
+      ...options,
+      max: resolvedMax,
+    }),
+  );
+};
 
 /**
  * Returns a random integer between min (inclusive) and max (inclusive).
@@ -108,15 +111,10 @@ const randomInteger = (options: NumericRangeOptions) =>
  * @param {boolean} [options.highEntropy=false] - Use Web Crypto API.
  *
  * @returns {number}
+ * @deprecated Use randomInteger({inclusiveMax:true}) instead
  */
-const randomIntegerInclusive = (options: NumericRangeOptions) => {
-  assert(
-    options.max < Number.MAX_SAFE_INTEGER,
-    "max must be less than Number.MAX_SAFE_INTEGER for inclusive range",
-  );
-
-  return randomInteger({ ...options, max: options.max + 1 });
-};
+const randomIntegerInclusive = (options: NumericRangeOptions) =>
+  randomInteger({ ...options, inclusiveMax: true });
 
 /**
  * Picks a random element from an array.
@@ -157,7 +155,12 @@ const shuffle = <T>(
 ): T[] => {
   const arrCopy = inPlace ? arr : arr.slice(); // create a shallow copy
   for (let i = arrCopy.length - 1; i > 0; i--) {
-    const j = randomIntegerInclusive({ min: 0, max: i, highEntropy });
+    const j = randomInteger({
+      min: 0,
+      max: i,
+      highEntropy,
+      inclusiveMax: true,
+    });
     [arrCopy[i] as T, arrCopy[j] as T] = [arrCopy[j] as T, arrCopy[i] as T];
   }
   return arrCopy;
@@ -168,6 +171,7 @@ const shuffle = <T>(
  *
  * @param {Object} [options]
  * @param {number} [options.likelihood=0.5] - Probability between 0 and 1.
+ * @param {boolean} [options.highEntropy=false] - Use Web Crypto API.
  *
  * @returns {boolean}
  */
@@ -178,7 +182,11 @@ const randomBoolean = ({
   likelihood?: number;
   highEntropy?: boolean;
 } = {}) => {
-  assertRange({ value: likelihood, min: 0, max: 1, name: "likelihood" });
+  assert(
+    0 <= likelihood && likelihood <= 1,
+    "likelihood must be between 0 and 1, inclusive",
+  );
+
   return randomFloat({ min: 0, max: 1, highEntropy }) < likelihood;
 };
 
@@ -242,7 +250,7 @@ const randomString = ({
     crypto.getRandomValues(bytes);
 
     // remove modulo bias
-    const max = Math.floor(2 ** 32 / charCount) * charCount;
+    const max = Math.floor(UINT32_MAX_PLUS_ONE / charCount) * charCount;
     const fbytes = bytes.filter((b) => b < max).slice(0, length);
 
     if (fbytes.length < length) {
@@ -279,13 +287,14 @@ const randomId = () => randomString({ length: 22, highEntropy: true });
 /**
  * Generates a cryptographically secure UUID (version 4).
  *
- * Uses the Web Crypto API `crypto.randomUUID()` implementation,
- * which produces an RFC 4122 compliant v4 UUID.
+ * Uses the Web Crypto API `crypto.randomUUID()` implementation, which produces
+ * an RFC 4122 compliant v4 UUID.
  *
- * Requires a runtime environment that supports the Web Crypto API.
- * Throws an error if `crypto.randomUUID` is unavailable.
+ * Requires a runtime environment that supports the Web Crypto API. Throws an
+ * error if `crypto.randomUUID` is unavailable.
  *
- * @returns {string} A v4 UUID string (e.g. "550e8400-e29b-41d4-a716-446655440000")
+ * @returns {string} A v4 UUID string (e.g.
+ * "550e8400-e29b-41d4-a716-446655440000")
  * @throws {Error} If cryptographic randomness is not available.
  */
 const randomUUID = () => {
@@ -296,16 +305,19 @@ const randomUUID = () => {
 /**
  * Generates a list of unique random integers within a given range.
  *
- * The range is inclusive of `min` and exclusive of `max`.
+ * The range is inclusive of `min` and exclusive of `max` by default.
  * The result will contain at most `count` values, or fewer if the range is smaller.
+ * Negative `count` values are treated as 0.
  *
  * @param {Object} params
- * @param {number} params.min - Lower bound (inclusive)
- * @param {number} params.max - Upper bound (exclusive)
- * @param {number} params.count - Number of integers to return
- * @param {boolean} [params.highEntropy=false] - Whether to use a higher quality randomization strategy
+ * @param {number} params.min - Lower bound (inclusive).
+ * @param {number} params.max - Upper bound (exclusive by default).
+ * @param {number} [params.count] - Number of integers to return. Defaults to the full range.
+ * @param {boolean} [params.highEntropy=false] - Use Web Crypto API for higher-entropy randomness.
+ * @param {boolean} [params.inclusiveMax=false] - Toggle inclusive or exclusive max.
  *
- * @returns {number[]} An array of unique random integers within [min, max)
+ * @returns {number[]} An array of unique random integers within [min, max).
+ * @throws {Error} If min or max are not safe integers, or if min > max.
  */
 const randomUniqueIntegers = ({
   min,
@@ -318,9 +330,9 @@ const randomUniqueIntegers = ({
   inclusiveMax?: boolean;
 }) => {
   const theMax = inclusiveMax ? max + 1 : max;
-  const theCount = count ?? Math.max(0, theMax - min);
+  const theCount = Math.max(0, count ?? Math.max(0, theMax - min));
 
-  assert(min <= theMax, "min must be less than or equal to max");
+  assertMinMaxIntegers({ min, max: theMax });
 
   const range = Math.max(0, theMax - min);
   const items = Array.from({ length: range }, (_, i) => i + min);
@@ -337,7 +349,7 @@ export {
   randomInteger,
   randomIntegerInclusive,
   randomString,
+  randomUniqueIntegers,
   randomUUID,
   shuffle,
-  randomUniqueIntegers,
 };
